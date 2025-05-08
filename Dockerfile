@@ -1,8 +1,17 @@
-FROM public.ecr.aws/lambda/python:3.9
+FROM python:3.9-slim
 
-RUN yum install -y python3-pip
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install
 COPY requirements.txt .
-RUN pip3 install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy the app code
 COPY app.py .
-CMD ["python3", "app.py"]
+
+# Expose port (Flask default)
+EXPOSE 5000
+
+# Start the application
+CMD ["python", "app.py"]
