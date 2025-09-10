@@ -1,0 +1,22 @@
+# cloudbuild.yaml
+steps:
+  # Step 1: Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t', 'asia-south1-docker.pkg.dev/b21forge/b21forge/test/wallex-app:$SHORT_SHA',
+        '.'
+      ]
+
+  # Step 2: Push Docker image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'push',
+        'asia-south1-docker.pkg.dev/b21forge/b21forge/test/wallex-app:$SHORT_SHA'
+      ]
+
+# List of images to register in build history
+images:
+  - 'asia-south1-docker.pkg.dev/b21forge/b21forge/test/wallex-app:$SHORT_SHA'
