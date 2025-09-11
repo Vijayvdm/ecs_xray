@@ -3,18 +3,18 @@ steps:
     args:
       [
         'build',
-        '-t', 'asia-south1-docker.pkg.dev/b21forge/b21forge/test/wallex-app:$SHORT_SHA',
+        '-t', 'asia-south1-docker.pkg.dev/b21forge/test/wallex-app:$SHORT_SHA',
         '.'
       ]
   - name: 'gcr.io/cloud-builders/docker'
     args:
       [
         'push',
-        'asia-south1-docker.pkg.dev/b21forge/b21forge/test/wallex-app:$SHORT_SHA'
+        'asia-south1-docker.pkg.dev/b21forge/test/wallex-app:$SHORT_SHA'
       ]
 
 images:
-  - 'asia-south1-docker.pkg.dev/b21forge/b21forge/test/wallex-app:$SHORT_SHA'
+  - 'asia-south1-docker.pkg.dev/b21forge/test/wallex-app:$SHORT_SHA'
 
 options:
   logging: CLOUD_LOGGING_ONLY
