@@ -8,10 +8,10 @@ on:
 env:
   AWS_REGION: ap-south-1
   ECR_REPO: 570248391191.dkr.ecr.ap-south-1.amazonaws.com/test
-  ECS_CLUSTER: test
-  ECS_SERVICE: test-service-zgaejo3k
+  ECS_CLUSTER: ECS
+  ECS_SERVICE: ECSService
   TASK_DEF_FILE: ecs-task-def.json
-  CONTAINER_NAME: test
+  CONTAINER_NAME: ECS
 
 jobs:
   deploy:
@@ -79,11 +79,4 @@ jobs:
           echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
 
       # Step 9: Deploy new task definition to ECS service
-      - name: Deploy new task definition to ECS service
-        run: |
-          set -e
-          aws ecs update-service \
-            --cluster "$ECS_CLUSTER" \
-            --service "$ECS_SERVICE" \
-            --task-definition "$TASK_DEF_ARN" \
-            --force-new-deployment
+      - name: Deploy
