@@ -1,0 +1,31 @@
+{
+  "family": "test",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "3072",
+  "executionRoleArn": "arn:aws:iam::570248391191:role/ecs-task-role",
+  "taskRoleArn": "arn:aws:iam::570248391191:role/ecs-task-role",
+  "containerDefinitions": [
+    {
+      "name": "test",
+      "image": "570248391191.dkr.ecr.ap-south-1.amazonaws.com/test",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 5000,
+          "hostPort": 5000,
+          "protocol": "tcp"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/test",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
