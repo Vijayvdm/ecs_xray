@@ -1,6 +1,6 @@
 
 {
-  "family": "test",
+  "family": "ECS",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "1024",
@@ -9,7 +9,7 @@
   "taskRoleArn": "arn:aws:iam::570248391191:role/ecs-task-role",
   "containerDefinitions": [
     {
-      "name": "test",
+      "name": "ECS",
       "image": "570248391191.dkr.ecr.ap-south-1.amazonaws.com/test",
       "essential": true,
       "portMappings": [
