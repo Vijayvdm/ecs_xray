@@ -15,63 +15,75 @@ env:
 
 jobs:
   deploy:
+    name: Deploy to Amazon ECS
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout the code
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Step 2: Configure AWS credentials
       - name: Configure AWS credentials
         run: |
-          aws configure set aws_access_key_id AKIAYJRLT5IL4V2C4N6Z
-          aws configure set aws_secret_access_key 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
-          aws configure set default.region $AWS_REGION
+          aws configure set aws_access_key_id "AKIAYJRLT5IL4V2C4N6Z"
+          aws configure set aws_secret_access_key "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"
+          aws configure set default.region "$AWS_REGION"
 
+      # Step 3: Install dependencies
       - name: Install dependencies
         run: |
           sudo apt-get update -y
           sudo apt-get install -y jq
 
+      # Step 4: Login to Amazon ECR
       - name: Login to Amazon ECR
         run: |
-          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
+          aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$ECR_REPO"
 
+      # Step 5: Build Docker image
       - name: Build Docker image
         run: |
           set -e
           IMAGE_TAG=$(date +%Y%m%d%H%M%S)
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
-          docker build -t $ECR_REPO:$IMAGE_TAG .
-          docker tag $ECR_REPO:$IMAGE_TAG $ECR_REPO:latest
+          docker build -t "$ECR_REPO:$IMAGE_TAG" .
+          docker tag "$ECR_REPO:$IMAGE_TAG" "$ECR_REPO:latest"
 
+      # Step 6: Push Docker image to ECR
       - name: Push Docker image to ECR
         run: |
           set -e
-          docker push $ECR_REPO:$IMAGE_TAG
-          docker push $ECR_REPO:latest
+          docker push "$ECR_REPO:$IMAGE_TAG"
+          docker push "$ECR_REPO:latest"
 
+      # Step 7: Update ECS task definition with the new image
       - name: Update task definition with new image
-        id: taskdef
+        id: update-taskdef
         run: |
           set -e
-          NEW_TASK_DEF=$(jq --arg IMAGE "$ECR_REPO:$IMAGE_TAG" '.containerDefinitions[0].image = $IMAGE' $TASK_DEF_FILE)
+          NEW_TASK_DEF=$(jq --arg IMAGE "$ECR_REPO:$IMAGE_TAG" \
+            '.containerDefinitions[0].image = $IMAGE' "$TASK_DEF_FILE")
           echo "$NEW_TASK_DEF" > new-task-def.json
           echo "TASK_DEF_FILE_PATH=new-task-def.json" >> $GITHUB_ENV
 
+      # Step 8: Register new ECS task definition
       - name: Register new ECS task definition
-        id: register
+        id: register-taskdef
         run: |
           set -e
           TASK_DEF_ARN=$(aws ecs register-task-definition \
             --cli-input-json file://new-task-def.json \
-            --query "taskDefinition.taskDefinitionArn" --output text)
+            --query "taskDefinition.taskDefinitionArn" \
+            --output text)
           echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
 
+      # Step 9: Deploy new task definition to ECS service
       - name: Deploy new task definition to ECS service
         run: |
           set -e
           aws ecs update-service \
-            --cluster $ECS_CLUSTER \
-            --service $ECS_SERVICE \
-            --task-definition $TASK_DEF_ARN \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_SERVICE" \
+            --task-definition "$TASK_DEF_ARN" \
             --force-new-deployment
