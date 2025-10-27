@@ -78,5 +78,12 @@ jobs:
             --output text)
           echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
 
-      # Step 9: Deploy new task definition to ECS service
-      - name: Deploy
+      # ✅ Step 9: Deploy new task definition to ECS service
+      - name: Deploy new task definition to ECS service
+        run: |
+          set -e
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_SERVICE" \
+            --task-definition "$TASK_DEF_ARN" \
+            --force-new-deployment
