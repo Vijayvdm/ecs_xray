@@ -1,0 +1,77 @@
+name: GitOps ECS Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REPO: 570248391191.dkr.ecr.ap-south-1.amazonaws.com/test
+  ECS_CLUSTER: test
+  ECS_SERVICE: test-service-zgaejo3k
+  TASK_DEF_FILE: ecs-task-def.json
+  CONTAINER_NAME: test
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        run: |
+          aws configure set aws_access_key_id AKIAYJRLT5IL4V2C4N6Z
+          aws configure set aws_secret_access_key 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
+          aws configure set default.region $AWS_REGION
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y jq
+
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
+
+      - name: Build Docker image
+        run: |
+          set -e
+          IMAGE_TAG=$(date +%Y%m%d%H%M%S)
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          docker build -t $ECR_REPO:$IMAGE_TAG .
+          docker tag $ECR_REPO:$IMAGE_TAG $ECR_REPO:latest
+
+      - name: Push Docker image to ECR
+        run: |
+          set -e
+          docker push $ECR_REPO:$IMAGE_TAG
+          docker push $ECR_REPO:latest
+
+      - name: Update task definition with new image
+        id: taskdef
+        run: |
+          set -e
+          NEW_TASK_DEF=$(jq --arg IMAGE "$ECR_REPO:$IMAGE_TAG" '.containerDefinitions[0].image = $IMAGE' $TASK_DEF_FILE)
+          echo "$NEW_TASK_DEF" > new-task-def.json
+          echo "TASK_DEF_FILE_PATH=new-task-def.json" >> $GITHUB_ENV
+
+      - name: Register new ECS task definition
+        id: register
+        run: |
+          set -e
+          TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://new-task-def.json \
+            --query "taskDefinition.taskDefinitionArn" --output text)
+          echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
+
+      - name: Deploy new task definition to ECS service
+        run: |
+          set -e
+          aws ecs update-service \
+            --cluster $ECS_CLUSTER \
+            --service $ECS_SERVICE \
+            --task-definition $TASK_DEF_ARN \
+            --force-new-deployment
