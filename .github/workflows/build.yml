@@ -18,6 +18,11 @@ jobs:
     name: Deploy to Amazon ECS
     runs-on: ubuntu-latest
 
+    # 👇 Add this block to enable manual approval before deployment
+    environment:
+      name: approval
+      url: https://console.aws.amazon.com/ecs/home
+
     steps:
       # Step 1: Checkout the code
       - name: Checkout code
