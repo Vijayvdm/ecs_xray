@@ -4,23 +4,23 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin 751651548664.dkr.ecr.ap-southeast-1.amazonaws.com
+      - aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin 720459752469.dkr.ecr.ap-southeast-1.amazonaws.com
 
   build:
     commands:
       - echo Build started on `date`
       - echo Building the Docker image...
       - docker build -t test -f Dockerfile .
-      - docker tag test:latest 751651548664.dkr.ecr.ap-southeast-1.amazonaws.com/testecr:latest
+      - docker tag test:latest 720459752469.dkr.ecr.ap-southeast-1.amazonaws.com/testecr:latest
 
   post_build:
     commands:
       - echo Build completed on `date`
       - echo Pushing the Docker image...
-      - docker push 751651548664.dkr.ecr.ap-southeast-1.amazonaws.com/testecr:latest
+      - docker push 720459752469.dkr.ecr.ap-southeast-1.amazonaws.com/testecr:latest
 
       - echo Writing image definitions file...
-      - echo "[{\"name\":\"testecr\",\"imageUri\":\"751651548664.dkr.ecr.ap-southeast-1.amazonaws.com/testecr:latest\"}]" > imagedefinitions.json
+      - echo "[{\"name\":\"testecr\",\"imageUri\":\"720459752469.dkr.ecr.ap-southeast-1.amazonaws.com/testecr:latest\"}]" > imagedefinitions.json
 
       - echo "Triggering CodeGuru Reviewer scan..."
       - |
@@ -35,7 +35,7 @@ phases:
                 }
               }
             },
-            \"RepositoryAssociationArn\": \"arn:aws:codeguru-reviewer:ap-southeast-1:751651548664:association:2731993b-213a-4d9f-ab86-634fecfbaef0\"
+            \"RepositoryAssociationArn\": \"arn:aws:codeguru-reviewer:ap-southeast-1:720459752469:association:2731993b-213a-4d9f-ab86-634fecfbaef0\"
           }"
 
 artifacts:
