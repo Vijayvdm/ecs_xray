@@ -1,44 +1,28 @@
 version: 0.2
-
 phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin 720459752469.dkr.ecr.ap-southeast-1.amazonaws.com
+      - aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin 439701543638.dkr.ecr.ap-southeast-1.amazonaws.com
+      - REPOSITORY_URI=439701543638.dkr.ecr.ap-southeast-1.amazonaws.com/test
+      - IMAGE_TAG=latest
 
   build:
     commands:
-      - echo Build started on `date`
-      - echo Building the Docker image...
+      - echo Building Docker image...
       - docker build -t test -f Dockerfile .
-      - docker tag test:latest 720459752469.dkr.ecr.ap-southeast-1.amazonaws.com/testecr:latest
+      - docker tag test:latest $REPOSITORY_URI:$IMAGE_TAG
 
   post_build:
     commands:
-      - echo Build completed on `date`
-      - echo Pushing the Docker image...
-      - docker push 720459752469.dkr.ecr.ap-southeast-1.amazonaws.com/testecr:latest
-
-      - echo Writing image definitions file...
-      - echo "[{\"name\":\"testecr\",\"imageUri\":\"720459752469.dkr.ecr.ap-southeast-1.amazonaws.com/testecr:latest\"}]" > imagedefinitions.json
-
-      - echo "Triggering CodeGuru Reviewer scan..."
-      - |
-        export REVIEW_NAME=code-review-$(date +%s)
-        aws codeguru-reviewer create-code-review \
-          --cli-input-json "{
-            \"Name\": \"${REVIEW_NAME}\",
-            \"Type\": {
-              \"RepositoryAnalysis\": {
-                \"RepositoryHead\": {
-                  \"BranchName\": \"master\"
-                }
-              }
-            },
-            \"RepositoryAssociationArn\": \"arn:aws:codeguru-reviewer:ap-southeast-1:720459752469:association:2731993b-213a-4d9f-ab86-634fecfbaef0\"
-          }"
+      - echo Pushing Docker image...
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo Updating ECS task definition...
+      - aws ecs describe-task-definition --task-definition Task --region ap-southeast-1 --query taskDefinition > taskdef.json
+      - sed -i "s|\"image\": *\"[^\"]*\"|\"image\": \"$REPOSITORY_URI:$IMAGE_TAG\"|" taskdef.json
+      - aws ecs register-task-definition --cli-input-json file://taskdef.json --region ap-southeast-1
+      - aws ecs update-service --cluster ecs --service Service --task-definition Task --force-new-deployment --region ap-southeast-1
 
 artifacts:
   files:
-    - imagedefinitions.json
-    - AppSpec.yaml
+    - taskdef.json
