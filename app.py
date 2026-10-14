@@ -10,7 +10,7 @@ XRayMiddleware(app, xray_recorder)
 
 @app.route('/')
 def index():
-    return "Hi the hot fix functioning as expected"
+    return "Is it workking"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
