@@ -10,7 +10,7 @@ XRayMiddleware(app, xray_recorder)
 
 @app.route('/')
 def index():
-    return "Is it workking"
+    return "App is workking however we have to check the CICD by Code Pipeline"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
