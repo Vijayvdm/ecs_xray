@@ -3,29 +3,18 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin 439701543638.dkr.ecr.ap-southeast-1.amazonaws.com
-      - REPOSITORY_URI=439701543638.dkr.ecr.ap-southeast-1.amazonaws.com/test
-      - IMAGE_TAG=latest
+      - IMAGE_URI=439701543638.dkr.ecr.ap-southeast-1.amazonaws.com/test
+      - IMAGE_TAG=$CODEBUILD_BUILD_NUMBER
 
   build:
     commands:
-      - echo Building Docker image...
-      - docker build -t test -f Dockerfile .
-      - docker tag test:latest $REPOSITORY_URI:$IMAGE_TAG
+      - docker build -t $IMAGE_URI:$IMAGE_TAG .
+      - docker push $IMAGE_URI:$IMAGE_TAG
 
   post_build:
     commands:
-      - echo Pushing Docker image...
-      - docker push $REPOSITORY_URI:$IMAGE_TAG
-      - echo Updating ECS task definition...
       - aws ecs describe-task-definition --task-definition Dev-Task --region ap-southeast-1 --query taskDefinition > taskdef.json
-      - sed -i "s|\"image\": *\"[^\"]*\"|\"image\": \"$REPOSITORY_URI:$IMAGE_TAG\"|" taskdef.json
-      - aws ecs register-task-definition --cli-input-json file://taskdef.json --region ap-southeast-1 > registered-task.json
-      - NEW_TASK_DEF=$(jq -r '.taskDefinition.taskDefinitionArn' registered-task.json)
-      - aws ecs update-service --cluster Dev-Cluster --service Dev-Service --task-definition "$NEW_TASK_DEF" --region ap-southeast-1
-
-artifacts:
-  files:
-    - taskdef.json
-    - registered-task.json
+      - python3 -c 'import json,os; p="taskdef.json"; d=json.load(open(p)); d["containerDefinitions"][0]["image"]=os.environ["IMAGE_URI"]+":"+os.environ["IMAGE_TAG"]; [d.pop(k,None) for k in ["taskDefinitionArn","revision","status","requiresAttributes","compatibilities","registeredAt","registeredBy","deregisteredAt"]]; json.dump(d,open(p,"w"))'
+      - TASK_DEF=$(aws ecs register-task-definition --cli-input-json file://taskdef.json --region ap-southeast-1 --query taskDefinition.taskDefinitionArn --output text)
+      - aws ecs update-service --cluster Dev-Cluster --service Dev-Service --task-definition "$TASK_DEF" --region ap-southeast-1
